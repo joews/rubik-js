@@ -260,14 +260,15 @@ THREEx.DomEvent.prototype._onEvent	= function(eventName, mouseX, mouseY, origDom
 	// init some vairables
 	var intersect	= intersects[0];
 	var object3d	= intersect.object;
+	var face = intersect.face; //joews
 	var objectCtx	= this._objectCtxGet(object3d);
 	if( !objectCtx )	return;
 
 	// notify handlers
-	this._notify(eventName, object3d, origDomEvent);
+	this._notify(eventName, object3d, origDomEvent, face);
 }
 
-THREEx.DomEvent.prototype._notify	= function(eventName, object3d, origDomEvent)
+THREEx.DomEvent.prototype._notify	= function(eventName, object3d, origDomEvent, targetFace)
 {
 	var objectCtx	= this._objectCtxGet(object3d);
 	var handlers	= objectCtx ? objectCtx[eventName+'Handlers'] : null;
@@ -286,6 +287,7 @@ THREEx.DomEvent.prototype._notify	= function(eventName, object3d, origDomEvent)
 		handler.callback({
 			type		: eventName,
 			target		: object3d,
+			targetFace: targetFace, //joews
 			origDomEvent	: origDomEvent,
 			stopPropagation	: function(){
 				toPropagate	= false;
