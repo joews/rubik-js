@@ -1,24 +1,32 @@
-function Rubik(element) {
-  var DEBUG = true;
+function Rubik(element, background) {
+  background = background || 0x303030;
 
-  var SCREEN_HEIGHT = window.innerHeight,
-      SCREEN_WIDTH = window.innerWidth;
+  var debug = false;
+
+  var width = element.innerWidth(),
+      height = element.innerHeight();
+
 
   /*** three.js boilerplate ***/
   var scene = new THREE.Scene(),
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000),
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000),
       renderer = new THREE.WebGLRenderer({ antialias: true });
+
+  renderer.setClearColor(background, 1.0);
+  renderer.setSize(width, height);
+  //renderer.shadowMapEnabled = true;
+  element.append(renderer.domElement);
 
   camera.position = new THREE.Vector3(-30, 40, 30);
   camera.lookAt(scene.position);
   THREE.Object3D._threexDomEvent.camera(camera);
 
-  //TODO: spotlight
+  /*** Lights ***/
   var light = new THREE.AmbientLight(0xffffff);
   scene.add(light);
 
-  //TODO: look at Trackball controls instead, enable keyboard
-  //TODO: don't pan when we click and drag on a cube!
+
+  /*** Camera controls ***/
   var orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
 
   function enableCameraControl() {
@@ -29,22 +37,10 @@ function Rubik(element) {
     orbitControl.noRotate = true;
   }
 
-  renderer.setClearColor(0xEEEEEE, 1.0);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  //renderer.shadowMapEnabled = true;
-  element.append(renderer.domElement);
-
-  if(DEBUG) {
+  /*** Debug aids ***/  
+  if(debug) {
     scene.add(new THREE.AxisHelper( 20 ));
   }
-
-  //TODO: colour the insides of all of the faces black
-  // (probably colour all faces black to begin with, then "whitelist" exterior faces)
-  var colours = [0xC41E3A, 0x009E60, 0x0051BA, 0xFF5800, 0xFFD500, 0xFFFFFF],
-      faceMaterials = colours.map(function(c) {
-        return new THREE.MeshLambertMaterial({ color: c , ambient: c });
-      }),
-      cubeMaterials = new THREE.MeshFaceMaterial(faceMaterials);
 
   /*** Click handling ***/
   //Return the axis which has the greatest maginitude for the vector v
@@ -98,6 +94,8 @@ function Rubik(element) {
 
   //TODO: handle "exit cube whilst dragging" events too
   var onCubeMouseUp = function(e, cube) {
+
+    //TODO: use the actual mouse end coordinates for finer drag control
     var dragVector = cube.rubikPosition.clone();
     dragVector.sub(clickVector);
 
@@ -110,9 +108,15 @@ function Rubik(element) {
           direction = dragVector[maxAxis] >= 0 ? 1 : -1;
       
       //Reverse direction of some rotations for intuitive control
+      //TODO: find a general solution!
       if(clickFace == 'z' && rotateAxis == 'x' || 
-          clickFace == 'x' && rotateAxis == 'z' ||
-          clickFace == 'y' && rotateAxis == 'z')
+         clickFace == 'x' && rotateAxis == 'z' ||
+         clickFace == 'y' && rotateAxis == 'z')
+        direction *= -1;
+
+      if(clickFace == 'x' && clickVector.x > 0 ||
+         clickFace == 'y' && clickVector.y < 0 ||
+         clickFace == 'z' && clickVector.z < 0)
         direction *= -1;
 
       startMove(rotateAxis, direction);
@@ -123,6 +127,14 @@ function Rubik(element) {
   };
 
   /*** Build 27 cubes ***/
+  //TODO: colour the insides of all of the faces black
+  // (probably colour all faces black to begin with, then "whitelist" exterior faces)
+  var colours = [0xC41E3A, 0x009E60, 0x0051BA, 0xFF5800, 0xFFD500, 0xFFFFFF],
+      faceMaterials = colours.map(function(c) {
+        return new THREE.MeshLambertMaterial({ color: c , ambient: c });
+      }),
+      cubeMaterials = new THREE.MeshFaceMaterial(faceMaterials);
+
   var cubeSize = 3,
       dimensions = 3,
       spacing = 0.5;
@@ -225,6 +237,19 @@ function Rubik(element) {
     }
   }
 
+  function doMove() {
+    //Move a quarter turn then stop
+    if(pivot.rotation[moveAxis] >= Math.PI / 2) {
+      //Compensate for overshoot. TODO: use a tweening library
+      pivot.rotation[moveAxis] = Math.PI / 2;
+      moveComplete();
+    } else if(pivot.rotation[moveAxis] <= Math.PI / -2) {
+      pivot.rotation[moveAxis] = Math.PI / -2;
+      moveComplete()
+    } else {
+      pivot.rotation[moveAxis] += (moveDirection * rotationSpeed);
+    }
+  }
 
   var moveComplete = function() {
     isMoving = false;
@@ -243,31 +268,24 @@ function Rubik(element) {
     });
   }
 
+
   function render() {
 
     //States
     if(isMoving) {
-      //Move a quarter turn then stop
-      if(pivot.rotation[moveAxis] >= Math.PI / 2) {
-        //Compensate for overshoot. TODO: use a tweening library
-        pivot.rotation[moveAxis] = Math.PI / 2;
-        moveComplete();
-      } else if(pivot.rotation[moveAxis] <= Math.PI / -2) {
-        pivot.rotation[moveAxis] = Math.PI / -2;
-        moveComplete()
-      } else {
-        pivot.rotation[moveAxis] += (moveDirection * rotationSpeed);
-      }
+      doMove();
     } 
 
     renderer.render(scene, camera);
     requestAnimationFrame(render);
   }
 
+  /*** Util ***/
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
   //Go!
   render();
 }
 
-$(function() {
-  RUBIK = new Rubik($('#scene'));
-})

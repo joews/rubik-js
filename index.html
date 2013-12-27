@@ -4,20 +4,46 @@
 <head>
   <title>Rubik Cube</title>
   <style>
+    html, body { height: 100%; }
     body { margin: 0; overflow: hidden; }
+    body, #scene { background-color: #303030; }
+    #scene { height: 90%; }
   </style>
 </head>
 
 <body>
+
+  <div id="controls">
+    <button id="btnShuffle" disabled="disabled">Shuffle</button>
+    <button id="btnReset">Reset</button>
+  </div>
   <div id="scene"></div>
+
   <script src="jquery-2.0.3.js"></script>
   <script src="three.js"></script>
   <script src="OrbitControls.js"></script>
-  <script src="TrackballControls.js"></script>
   <script src='threex.domevent.js'></script>
   <script src='threex.domevent.object3d.js'></script>
 
   <script src="rubik.js"></script>
+  <script>
+
+    $(function() {
+      var RUBIK;
+
+      function init() {
+        var element = $("#scene").empty();
+        RUBIK = new Rubik(element);
+      };
+
+      init();
+
+      $("#btnShuffle").on('click', RUBIK.shuffle);
+      $("#btnReset").on('click', init);
+    });
+
+  </script>
+
 </body>
 
 </html>
