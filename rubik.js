@@ -19,7 +19,15 @@ function Rubik(element) {
 
   //TODO: look at Trackball controls instead, enable keyboard
   //TODO: don't pan when we click and drag on a cube!
-  //new THREE.OrbitControls(camera, renderer.domElement);
+  var orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
+
+  function enableCameraControl() {
+    orbitControl.noRotate = false;
+  }
+
+  function disableCameraControl() {
+    orbitControl.noRotate = true;
+  }
 
   renderer.setClearColor(0xEEEEEE, 1.0);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -59,11 +67,10 @@ function Rubik(element) {
   var clickVector, clickFace;
 
   var onCubeMouseDown = function(e, cube) {
-    //console.log("Cube mouse down");
-    //console.log(cube.rubikPosition);
-    e.stopPropagation(); //TODO: doesn't stop the OrbitControls from moving around
-    clickVector = cube.rubikPosition.clone();
+    disableCameraControl();
 
+    clickVector = cube.rubikPosition.clone();
+    
     var centroid = e.targetFace.centroid.clone();
     centroid.applyMatrix4(cube.matrixWorld);
 
@@ -109,6 +116,7 @@ function Rubik(element) {
         direction *= -1;
 
       startMove(rotateAxis, direction);
+      enableCameraControl();
     } else {
       console.log("Drag me some more please!");
     }
@@ -218,7 +226,7 @@ function Rubik(element) {
   }
 
 
-  moveComplete = function() {
+  var moveComplete = function() {
     isMoving = false;
     moveAxis, moveN, moveDirection = undefined;
     clickVector = undefined;
@@ -234,7 +242,6 @@ function Rubik(element) {
       THREE.SceneUtils.detach(cube, pivot, scene);
     });
   }
-  this.moveComplete = moveComplete;
 
   function render() {
 
@@ -257,6 +264,7 @@ function Rubik(element) {
     requestAnimationFrame(render);
   }
 
+  //Go!
   render();
 }
 
