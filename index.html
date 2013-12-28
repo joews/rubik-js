@@ -13,17 +13,20 @@
 
 <body>
 
+  <a href="https://github.com/jwhitfieldseed/rubik-js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+
   <div id="controls">
-    <button id="btnShuffle" disabled="disabled">Shuffle</button>
-    <button id="btnReset">Reset</button>
+    <button id="button-shuffle">Shuffle</button>
+    <button id="button-solve">Solve</button>
+    <button id="button-reset">Reset</button>
   </div>
   <div id="scene"></div>
 
-  <script src="jquery-2.0.3.js"></script>
-  <script src="three.js"></script>
-  <script src="OrbitControls.js"></script>
-  <script src='threex.domevent.js'></script>
-  <script src='threex.domevent.object3d.js'></script>
+  <script src="lib/jquery-2.0.3.js"></script>
+  <script src="lib/three.js"></script>
+  <script src="lib/OrbitControls.js"></script>
+  <script src='lib/threex.domevent.js'></script>
+  <script src='lib/threex.domevent.object3d.js'></script>
 
   <script src="rubik.js"></script>
   <script>
@@ -38,8 +41,9 @@
 
       init();
 
-      $("#btnShuffle").on('click', RUBIK.shuffle);
-      $("#btnReset").on('click', init);
+      $("#button-shuffle").on('click', RUBIK.shuffle);
+      $("#button-solve").on('click', RUBIK.solve);
+      $("#button-reset").on('click', init);
     });
 
   </script>

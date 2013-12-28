@@ -14,7 +14,7 @@ function Rubik(element, background) {
 
   renderer.setClearColor(background, 1.0);
   renderer.setSize(width, height);
-  //renderer.shadowMapEnabled = true;
+  renderer.shadowMapEnabled = true;
   element.append(renderer.domElement);
 
   camera.position = new THREE.Vector3(-30, 40, 30);
@@ -22,9 +22,8 @@ function Rubik(element, background) {
   THREE.Object3D._threexDomEvent.camera(camera);
 
   /*** Lights ***/
-  var light = new THREE.AmbientLight(0xffffff);
-  scene.add(light);
-
+  scene.add(new THREE.AmbientLight(0xffffff));
+  //TODO: add a spotlight that takes the orbitcontrols into account to stay "static"
 
   /*** Camera controls ***/
   var orbitControl = new THREE.OrbitControls(camera, renderer.domElement);
@@ -119,7 +118,9 @@ function Rubik(element, background) {
          clickFace == 'z' && clickVector.z < 0)
         direction *= -1;
 
-      startMove(rotateAxis, direction);
+      //startMove(rotateAxis, direction);
+      pushMove(cube, clickVector.clone(), rotateAxis, direction);
+      startNextMove();
       enableCameraControl();
     } else {
       console.log("Drag me some more please!");
@@ -179,6 +180,15 @@ function Rubik(element, background) {
 
 
   /*** Manage transition states ***/
+
+  //TODO: encapsulate each transition into a "Move" object, and keep a stack of moves
+  // - that will allow us to easily generalise to other states like a "hello" state which
+  // could animate the cube, or a "complete" state which could do an animation to celebrate
+  // solving.
+  var moveQueue = [],
+      completedMoveStack = [],
+      currentMove;
+
   //Are we in the middle of a transition?
   var isMoving = false;
   var moveAxis, moveN, moveDirection;
@@ -209,32 +219,45 @@ function Rubik(element, background) {
     }
   }
 
+  var pushMove = function(cube, clickVector, axis, direction) {
+    moveQueue.push({ cube: cube, vector: clickVector, axis: axis, direction: direction });
+  }
 
-  var startMove = function(axis, direction) {
-    if(clickVector) {
-      var direction = direction || 1;
+  var startNextMove = function() {
+    var nextMove = moveQueue.pop();
 
-      if(!isMoving) {
-        isMoving = true;
-        moveAxis = axis;
-        moveDirection = direction;
+    if(nextMove) {
+      clickVector = nextMove.vector;
+      
+      var direction = nextMove.direction || 1,
+          axis = nextMove.axis;
 
-        setActiveGroup(axis);
+      if(clickVector) {
 
-        pivot.rotation.set(0,0,0);
-        pivot.updateMatrixWorld();
-        scene.add(pivot);
+        if(!isMoving) {
+          isMoving = true;
+          moveAxis = axis;
+          moveDirection = direction;
 
-        activeGroup.forEach(function(e) {
-          THREE.SceneUtils.attach(e, scene, pivot);
-        });
+          setActiveGroup(axis);
 
+          pivot.rotation.set(0,0,0);
+          pivot.updateMatrixWorld();
+          scene.add(pivot);
+
+          activeGroup.forEach(function(e) {
+            THREE.SceneUtils.attach(e, scene, pivot);
+          });
+
+          currentMove = nextMove;
+
+        } else {
+          console.log("Already moving!");
+        }
       } else {
-        console.log("Already moving!");
+        console.log("Nothing to move!");
       }
-    } else {
-      console.log("Nothing to move!");
-    }
+    } 
   }
 
   function doMove() {
@@ -266,12 +289,20 @@ function Rubik(element, background) {
 
       THREE.SceneUtils.detach(cube, pivot, scene);
     });
+
+    completedMoveStack.push(currentMove);
+    // console.log(completedMoveStack);
+
+    //Are there any more queued moves?
+    startNextMove();
   }
 
 
   function render() {
 
     //States
+    //TODO: generalise to something like "activeState.tick()" - see comments 
+    // on encapsulation above
     if(isMoving) {
       doMove();
     } 
@@ -287,5 +318,49 @@ function Rubik(element, background) {
 
   //Go!
   render();
+
+  //Public API
+  return {
+    shuffle: function() {
+      function randomAxis() {
+        return ['x', 'y', 'z'][randomInt(0,2)];
+      }
+
+      function randomDirection() {
+        var x = randomInt(0,1);
+        if(x == 0) x = -1;
+        return x;
+      }
+
+      function randomCube() {
+        //TODO: generalise
+        var i = randomInt(0, 26);
+        //TODO: don't return a centre cube
+        return allCubes[i];
+      }
+
+      var nMoves = randomInt(10, 40);
+      for(var i = 0; i < nMoves; i ++) {
+        //TODO: don't reselect the same axis?
+        var cube = randomCube();
+        pushMove(cube, cube.position.clone(), randomAxis(), randomDirection());
+      }
+
+      startNextMove();
+    },
+
+    //A naive solver - step backwards through all completed steps
+    solve: function() {
+      completedMoveStack.forEach(function(move) {
+        pushMove(move.cube, move.vector, move.axis, move.direction * -1);
+      });
+
+      completedMoveStack = [];
+      startNextMove();
+
+      //TODO: we should clear the completed move stack after all of the moves complete
+      // - fire an event for moveQueue depleted?
+    }
+  }
 }
 
