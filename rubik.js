@@ -17,7 +17,7 @@ function Rubik(element, background) {
   renderer.shadowMapEnabled = true;
   element.append(renderer.domElement);
 
-  camera.position = new THREE.Vector3(-30, 40, 30);
+  camera.position = new THREE.Vector3(-20, 20, 30);
   camera.lookAt(scene.position);
   THREE.Object3D._threexDomEvent.camera(camera);
 
@@ -42,6 +42,30 @@ function Rubik(element, background) {
   }
 
   /*** Click handling ***/
+
+  //Do the given coordinates intersect with any cubes?
+  var SCREEN_HEIGHT = window.innerHeight;
+  var SCREEN_WIDTH = window.innerWidth;
+
+  function isMouseOverCube(mouseX, mouseY) {
+    var raycaster = new THREE.Raycaster(),
+        projector = new THREE.Projector(),
+        directionVector = new THREE.Vector3();
+
+    //Normalise mouse x and y
+    var x = ( mouseX / SCREEN_WIDTH ) * 2 - 1;
+    var y = -( mouseY / SCREEN_HEIGHT ) * 2 + 1;
+
+    directionVector.set(x, y, 1);
+
+    projector.unprojectVector(directionVector, camera);
+    directionVector.sub(camera.position);
+    directionVector.normalize();
+    raycaster.set(camera.position, directionVector);
+
+    return raycaster.intersectObjects(allCubes, true).length > 0;
+  }
+
   //Return the axis which has the greatest maginitude for the vector v
   function principalComponent(v) {
     var maxAxis = 'x',
@@ -57,25 +81,33 @@ function Rubik(element, background) {
     return maxAxis;
   }
 
-  //The currently clicked cube's position
-  // and the axis we will rotate around
+  //For each mouse down, track the position of the cube that
+  // we clicked (clickVector) and the face object that we clicked on 
+  // (clickFace)
   var clickVector, clickFace;
+
+  //Keep track of the last cube that the user's drag exited, so we can make
+  // valid movements that end outside of the Rubik's cube
+  var lastCube;
 
   var onCubeMouseDown = function(e, cube) {
     disableCameraControl();
 
-    clickVector = cube.rubikPosition.clone();
-    
-    var centroid = e.targetFace.centroid.clone();
-    centroid.applyMatrix4(cube.matrixWorld);
+    //Maybe add move check in here
+    if(true || !isMoving) {
+      clickVector = cube.rubikPosition.clone();
+      
+      var centroid = e.targetFace.centroid.clone();
+      centroid.applyMatrix4(cube.matrixWorld);
 
-    //Which face (of the overall cube) did we click on?
-    if(nearlyEqual(Math.abs(centroid.x), maxExtent))
-      clickFace = 'x';
-    else if(nearlyEqual(Math.abs(centroid.y), maxExtent))
-      clickFace = 'y';
-    else if(nearlyEqual(Math.abs(centroid.z), maxExtent))
-      clickFace = 'z';      
+      //Which face (of the overall cube) did we click on?
+      if(nearlyEqual(Math.abs(centroid.x), maxExtent))
+        clickFace = 'x';
+      else if(nearlyEqual(Math.abs(centroid.y), maxExtent))
+        clickFace = 'y';
+      else if(nearlyEqual(Math.abs(centroid.z), maxExtent))
+        clickFace = 'z';    
+    }  
   };
 
   //Matrix of the axis that we should rotate for 
@@ -94,38 +126,61 @@ function Rubik(element, background) {
   //TODO: handle "exit cube whilst dragging" events too
   var onCubeMouseUp = function(e, cube) {
 
-    //TODO: use the actual mouse end coordinates for finer drag control
-    var dragVector = cube.rubikPosition.clone();
-    dragVector.sub(clickVector);
+    if(clickVector) {
+      //TODO: use the actual mouse end coordinates for finer drag control
+      var dragVector = cube.rubikPosition.clone();
+      dragVector.sub(clickVector);
 
-    //Don't move if the "drag" was too small, to allow for 
-    // click-and-change-mind.
-    if(dragVector.length() > cubeSize) {
-      //Rorate with the most significant component of the drag vector
-      var maxAxis = principalComponent(dragVector),
-          rotateAxis = transitions[clickFace][maxAxis],
-          direction = dragVector[maxAxis] >= 0 ? 1 : -1;
-      
-      //Reverse direction of some rotations for intuitive control
-      //TODO: find a general solution!
-      if(clickFace == 'z' && rotateAxis == 'x' || 
-         clickFace == 'x' && rotateAxis == 'z' ||
-         clickFace == 'y' && rotateAxis == 'z')
-        direction *= -1;
+      //Don't move if the "drag" was too small, to allow for 
+      // click-and-change-mind.
+      if(dragVector.length() > cubeSize) {
 
-      if(clickFace == 'x' && clickVector.x > 0 ||
-         clickFace == 'y' && clickVector.y < 0 ||
-         clickFace == 'z' && clickVector.z < 0)
-        direction *= -1;
+        //Rotate with the most significant component of the drag vector
+        // (excluding the current axis, because we can't rotate that way)
+        var dragVectorOtherAxes = dragVector.clone();
+        dragVectorOtherAxes[clickFace] = 0;
 
-      //startMove(rotateAxis, direction);
-      pushMove(cube, clickVector.clone(), rotateAxis, direction);
-      startNextMove();
-      enableCameraControl();
-    } else {
-      console.log("Drag me some more please!");
+        var maxAxis = principalComponent(dragVectorOtherAxes);
+
+        var rotateAxis = transitions[clickFace][maxAxis],
+            direction = dragVector[maxAxis] >= 0 ? 1 : -1;
+        
+        //Reverse direction of some rotations for intuitive control
+        //TODO: find a general solution!
+        if(clickFace == 'z' && rotateAxis == 'x' || 
+           clickFace == 'x' && rotateAxis == 'z' ||
+           clickFace == 'y' && rotateAxis == 'z')
+          direction *= -1;
+
+        if(clickFace == 'x' && clickVector.x > 0 ||
+           clickFace == 'y' && clickVector.y < 0 ||
+           clickFace == 'z' && clickVector.z < 0)
+          direction *= -1;
+
+        pushMove(cube, clickVector.clone(), rotateAxis, direction);
+        startNextMove();
+        enableCameraControl();
+      } else {
+        console.log("Drag me some more please!");
+      }
     }
   };
+
+  //If the mouse was released outside of the Rubik's cube, use the cube that the mouse 
+  // was last over to determine which move to make
+  var onCubeMouseOut = function(e, cube) {
+    //TODO: there is a possibility that, at some rotations, we may catch unintentional
+    // cubes on the way out. We should check that the selected cube is on the current
+    // drag vector.
+    lastCube = cube;
+  }
+
+  element.on('mouseup', function(e) {
+    if(!isMouseOverCube(e.clientX, e.clientY)) {
+      if(lastCube)
+        onCubeMouseUp(e, lastCube);
+    }
+  });
 
   /*** Build 27 cubes ***/
   //TODO: colour the insides of all of the faces black
@@ -160,6 +215,10 @@ function Rubik(element, background) {
       onCubeMouseUp(e, cube);
     });
 
+    cube.on('mouseout', function(e) {
+      onCubeMouseOut(e, cube);
+    });
+
     scene.add(cube);
     allCubes.push(cube);
   }
@@ -185,6 +244,8 @@ function Rubik(element, background) {
   // - that will allow us to easily generalise to other states like a "hello" state which
   // could animate the cube, or a "complete" state which could do an animation to celebrate
   // solving.
+
+  //Maintain a queue of moves so we can perform compound actions like shuffle and solve
   var moveQueue = [],
       completedMoveStack = [],
       currentMove,
@@ -362,9 +423,6 @@ function Rubik(element, background) {
 
       completedMoveStack = [];
       startNextMove();
-
-      //TODO: we should clear the completed move stack after all of the moves complete
-      // - fire an event for moveQueue depleted?
     }
   }
 }
