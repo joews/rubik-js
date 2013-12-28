@@ -187,12 +187,13 @@ function Rubik(element, background) {
   // solving.
   var moveQueue = [],
       completedMoveStack = [],
-      currentMove;
+      currentMove,
+      clearStackAfterThisQueue = false;
 
   //Are we in the middle of a transition?
-  var isMoving = false;
-  var moveAxis, moveN, moveDirection;
-  var rotationSpeed = 0.1;
+  var isMoving = false,
+      moveAxis, moveN, moveDirection,
+      rotationSpeed = 0.1;
 
   //http://stackoverflow.com/questions/20089098/three-js-adding-and-removing-children-of-rotated-objects
   var pivot = new THREE.Object3D(),
@@ -250,14 +251,18 @@ function Rubik(element, background) {
           });
 
           currentMove = nextMove;
-
         } else {
           console.log("Already moving!");
         }
       } else {
         console.log("Nothing to move!");
       }
-    } 
+    } else {
+      if(clearStackAfterThisQueue) {
+        completedMoveStack = [];
+        clearStackAfterThisQueue = false;
+      }
+    }
   }
 
   function doMove() {
@@ -291,7 +296,6 @@ function Rubik(element, background) {
     });
 
     completedMoveStack.push(currentMove);
-    // console.log(completedMoveStack);
 
     //Are there any more queued moves?
     startNextMove();
@@ -333,8 +337,7 @@ function Rubik(element, background) {
       }
 
       function randomCube() {
-        //TODO: generalise
-        var i = randomInt(0, 26);
+        var i = randomInt(0, allCubes.length - 1);
         //TODO: don't return a centre cube
         return allCubes[i];
       }
@@ -351,6 +354,8 @@ function Rubik(element, background) {
 
     //A naive solver - step backwards through all completed steps
     solve: function() {
+      //Don't remember the moves we're making whilst solving
+      clearStackAfterThisQueue = true;
       completedMoveStack.forEach(function(move) {
         pushMove(move.cube, move.vector, move.axis, move.direction * -1);
       });
