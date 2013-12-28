@@ -37,13 +37,15 @@
       function init() {
         var element = $("#scene").empty();
         RUBIK = new Rubik(element);
+
+        $("#button-shuffle").on('click', RUBIK.shuffle);
+        $("#button-solve").on('click', RUBIK.solve);
+        $("#button-reset").on('click', init);        
       };
 
       init();
 
-      $("#button-shuffle").on('click', RUBIK.shuffle);
-      $("#button-solve").on('click', RUBIK.solve);
-      $("#button-reset").on('click', init);
+      
     });
 
   </script>
