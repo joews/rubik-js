@@ -1,26 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+  <meta charset="utf-8" />
   <title>Rubik Cube</title>
-  <style>
-    html, body { height: 100%; }
-    body { margin: 0; overflow: hidden; }
-    body, #scene { background-color: #303030; }
-    #scene { height: 90%; }
-  </style>
+  <link href='http://fonts.googleapis.com/css?family=Alegreya+Sans+SC' rel='stylesheet' type='text/css'>
+  <link href="style.css" rel="stylesheet">
+
 </head>
 
 <body>
 
-  <a href="https://github.com/jwhitfieldseed/rubik-js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+  <a href="https://github.com/jwhitfieldseed/rubik-js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png" alt="Fork me on GitHub"></a>
 
-  <div id="controls">
-    <button id="button-shuffle">Shuffle</button>
-    <button id="button-solve">Solve</button>
-    <button id="button-reset">Reset</button>
-  </div>
+  <ul id="controls">
+    <li><a href="#shuffle" id="button-shuffle">Shuffle</a></li>
+    <li><a href="#solve" id="button-solve">Solve</a></li>
+    <li><a href="#undo" id="button-undo">Undo</a></li>
+    <li><a href="#reset" id="button-reset">Reset</a></li>
+  </ul>
+
   <div id="scene"></div>
+
+  <p id="info">
+    Built with <a href="http://threejs.org">Three.js</a> by <a href="https://github.com/jwhitfieldseed ">Joe Whitfield-Seed </a> 2013.
+  </p>
 
   <script src="lib/jquery-2.0.3.js"></script>
   <script src="lib/three.js"></script>
@@ -38,9 +42,10 @@
         var element = $("#scene").empty();
         RUBIK = new Rubik(element);
 
-        $("#button-shuffle").on('click', RUBIK.shuffle);
-        $("#button-solve").on('click', RUBIK.solve);
-        $("#button-reset").on('click', init);        
+        $("#button-shuffle").on('click', function(e) { e.preventDefault(); RUBIK.shuffle() });
+        $("#button-solve").on('click', function(e) { e.preventDefault(); RUBIK.solve(); });
+        $("#button-undo").on('click', function(e) { e.preventDefault(); RUBIK.undo(); });
+        $("#button-reset").on('click', function(e) { e.preventDefault(); init(); });        
       };
 
       init();

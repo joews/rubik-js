@@ -1,0 +1,61 @@
+html, body {
+	height: 100%;
+}
+
+body { 
+	margin: 0; 
+	overflow: hidden; 
+	background-color: #303030;
+	font-family: 'Alegreya Sans SC';
+	color: #eee;
+}
+
+p#info {
+	position: absolute;
+	bottom: 0;
+	margin: 10px;
+}
+
+a {
+	color: #ff7600;
+	text-decoration: none;
+}
+
+#controls { 
+	position: absolute;
+	top: 0;
+	list-style-type: none;
+	margin: 5px;
+	padding: 0;
+	max-width: 70%;
+
+}
+
+#controls > li {
+	margin: 0 5px;
+	padding: 0;
+	float: left;
+}
+
+#controls > li:after {
+	content: '~';
+	color: #999;
+}
+
+#controls > li:last-child:after {
+	content: none;
+}
+
+#controls > li a {
+	margin-right: 10px;
+	font-size: 1.2em;
+	color: #eee;
+}
+
+#controls > li a:hover {
+	color: #ff7600;
+}
+
+#scene { 
+	height: 100%;
+}
