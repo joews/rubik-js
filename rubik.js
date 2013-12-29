@@ -1,11 +1,10 @@
 function Rubik(element, background) {
   background = background || 0x303030;
 
-  var debug = false;
-
   var width = element.innerWidth(),
       height = element.innerHeight();
 
+  var debug = false;
 
   /*** three.js boilerplate ***/
   var scene = new THREE.Scene(),
@@ -244,12 +243,12 @@ function Rubik(element, background) {
   // - that will allow us to easily generalise to other states like a "hello" state which
   // could animate the cube, or a "complete" state which could do an animation to celebrate
   // solving.
+  var moveEvents = $({});
 
   //Maintain a queue of moves so we can perform compound actions like shuffle and solve
   var moveQueue = [],
       completedMoveStack = [],
-      currentMove,
-      clearStackAfterThisQueue = false;
+      currentMove;
 
   //Are we in the middle of a transition?
   var isMoving = false,
@@ -319,10 +318,7 @@ function Rubik(element, background) {
         console.log("Nothing to move!");
       }
     } else {
-      if(clearStackAfterThisQueue) {
-        completedMoveStack = [];
-        clearStackAfterThisQueue = false;
-      }
+      moveEvents.trigger('deplete');
     }
   }
 
@@ -357,6 +353,8 @@ function Rubik(element, background) {
     });
 
     completedMoveStack.push(currentMove);
+
+    moveEvents.trigger('complete');
 
     //Are there any more queued moves?
     startNextMove();
@@ -415,14 +413,38 @@ function Rubik(element, background) {
 
     //A naive solver - step backwards through all completed steps
     solve: function() {
-      //Don't remember the moves we're making whilst solving
-      clearStackAfterThisQueue = true;
-      completedMoveStack.forEach(function(move) {
-        pushMove(move.cube, move.vector, move.axis, move.direction * -1);
-      });
+      if(!isMoving) {
+        completedMoveStack.forEach(function(move) {
+          pushMove(move.cube, move.vector, move.axis, move.direction * -1);
+        });
 
-      completedMoveStack = [];
-      startNextMove();
+        //Don't remember the moves we're making whilst solving
+        completedMoveStack = [];
+
+        moveEvents.one('deplete', function() {
+          completedMoveStack = [];
+        });
+
+        startNextMove();
+      }
+    },
+
+    //Rewind the last move
+    undo: function() {
+      if(!isMoving) {
+        var lastMove = completedMoveStack.pop();
+        if(lastMove) {
+          //clone
+          var stackToRestore = completedMoveStack.slice(0);
+          pushMove(lastMove.cube, lastMove.vector, lastMove.axis, lastMove.direction * -1);
+
+          moveEvents.one('complete', function() {
+            completedMoveStack = stackToRestore;
+          });
+
+          startNextMove();
+        }
+      }
     }
   }
 }
