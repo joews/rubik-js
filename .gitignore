@@ -3,3 +3,4 @@ Notes
 *.tmp
 tmp
 tmp*
+*.sh
