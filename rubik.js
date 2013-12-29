@@ -1,4 +1,9 @@
-function Rubik(element, background) {
+// element: a jQuery object containing the DOM element to use
+// dimensions: the number of cubes per row/column (default 3)
+// background: the scene background colour
+function Rubik(element, dimensions, background) {
+
+  dimensions = dimensions || 3;
   background = background || 0x303030;
 
   var width = element.innerWidth(),
@@ -46,10 +51,11 @@ function Rubik(element, background) {
   var SCREEN_HEIGHT = window.innerHeight;
   var SCREEN_WIDTH = window.innerWidth;
 
+  var raycaster = new THREE.Raycaster(),
+      projector = new THREE.Projector();
+
   function isMouseOverCube(mouseX, mouseY) {
-    var raycaster = new THREE.Raycaster(),
-        projector = new THREE.Projector(),
-        directionVector = new THREE.Vector3();
+    var directionVector = new THREE.Vector3();
 
     //Normalise mouse x and y
     var x = ( mouseX / SCREEN_WIDTH ) * 2 - 1;
@@ -122,7 +128,6 @@ function Rubik(element, background) {
     'z': {'x': 'y', 'y': 'x'}
   }
 
-  //TODO: handle "exit cube whilst dragging" events too
   var onCubeMouseUp = function(e, cube) {
 
     if(clickVector) {
@@ -191,7 +196,6 @@ function Rubik(element, background) {
       cubeMaterials = new THREE.MeshFaceMaterial(faceMaterials);
 
   var cubeSize = 3,
-      dimensions = 3,
       spacing = 0.5;
 
   var increment = cubeSize + spacing,
@@ -222,20 +226,19 @@ function Rubik(element, background) {
     allCubes.push(cube);
   }
 
+  var positionOffset = (dimensions - 1) / 2;
   for(var i = 0; i < dimensions; i ++) {
     for(var j = 0; j < dimensions; j ++) {
       for(var k = 0; k < dimensions; k ++) {
 
-        //TODO - generalise the -1 offset to work with any size RC (-1 is for 3*3*3). I think it's (n-1)/2.
-        var x = (i - 1) * increment,
-            y = (j - 1) * increment,
-            z = (k - 1) * increment;
+        var x = (i - positionOffset) * increment,
+            y = (j - positionOffset) * increment,
+            z = (k - positionOffset) * increment;
 
         newCube(x, y, z);
       }
     }
   }
-
 
   /*** Manage transition states ***/
 
@@ -253,7 +256,7 @@ function Rubik(element, background) {
   //Are we in the middle of a transition?
   var isMoving = false,
       moveAxis, moveN, moveDirection,
-      rotationSpeed = 0.1;
+      rotationSpeed = 0.2;
 
   //http://stackoverflow.com/questions/20089098/three-js-adding-and-removing-children-of-rotated-objects
   var pivot = new THREE.Object3D(),

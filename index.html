@@ -18,6 +18,15 @@
     <li><a href="#solve" id="button-solve">Solve</a></li>
     <li><a href="#undo" id="button-undo">Undo</a></li>
     <li><a href="#reset" id="button-reset">Reset</a></li>
+    <li>
+      <label>Size</label>
+      <select id="select-size">
+        <option value="3">3x3</option>
+        <option value="4">4x4</option>
+        <option value="5">5x5</option>
+        <!-- we can go bigger but it gets unwieldy! -->
+      </select>
+    </li>
   </ul>
 
   <div id="scene"></div>
@@ -36,16 +45,17 @@
   <script>
 
     $(function() {
-      var RUBIK;
+      function init(dimensions) {
+        dimensions = +(dimensions) || 3;
 
-      function init() {
         var element = $("#scene").empty();
-        RUBIK = new Rubik(element);
+        var rubik = new Rubik(element, dimensions);
 
-        $("#button-shuffle").on('click', function(e) { e.preventDefault(); RUBIK.shuffle() });
-        $("#button-solve").on('click', function(e) { e.preventDefault(); RUBIK.solve(); });
-        $("#button-undo").on('click', function(e) { e.preventDefault(); RUBIK.undo(); });
+        $("#button-shuffle").on('click', function(e) { e.preventDefault(); rubik.shuffle() });
+        $("#button-solve").on('click', function(e) { e.preventDefault(); rubik.solve(); });
+        $("#button-undo").on('click', function(e) { e.preventDefault(); rubik.undo(); });
         $("#button-reset").on('click', function(e) { e.preventDefault(); init(); });        
+        $("#select-size").on('change', function() { init($(this).val()) });        
       };
 
       init();

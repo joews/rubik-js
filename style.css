@@ -46,10 +46,16 @@ a {
 	content: none;
 }
 
-#controls > li a {
+#controls > li a, #controls > li label {
 	margin-right: 10px;
 	font-size: 1.2em;
 	color: #eee;
+	line-height: 2em;
+}
+
+#controls > li select {
+	color: #333;
+	font-size: 1em;
 }
 
 #controls > li a:hover {
