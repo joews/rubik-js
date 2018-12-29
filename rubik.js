@@ -288,7 +288,7 @@ function Rubik(element, dimensions, background) {
   }
 
   var startNextMove = function() {
-    var nextMove = moveQueue.pop();
+    var nextMove = moveQueue.unshift();
 
     if(nextMove) {
       clickVector = nextMove.vector;
