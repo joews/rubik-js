@@ -187,13 +187,25 @@ function Rubik(element, dimensions, background) {
   });
 
   /*** Build 27 cubes ***/
-  //TODO: colour the insides of all of the faces black
-  // (probably colour all faces black to begin with, then "whitelist" exterior faces)
-  var colours = [0xC41E3A, 0x009E60, 0x0051BA, 0xFF5800, 0xFFD500, 0xFFFFFF],
-      faceMaterials = colours.map(function(c) {
-        return new THREE.MeshLambertMaterial({ color: c , ambient: c });
-      }),
-      cubeMaterials = new THREE.MeshFaceMaterial(faceMaterials);
+  // Order: right, left, top, bottom, front, back
+  var colours = [0xC41E3A, 0x009E60, 0x0051BA, 0xFF5800, 0xFFD500, 0xFFFFFF];
+      
+  var cubeMaterials = [];
+  for(let i = 0; i < 27; i++){
+    let faceMaterialC = [0x0, 0x0, 0x0, 0x0, 0x0, 0x0];
+    if(i % 3 == 0) faceMaterialC[5] = colours[5];
+    if(i % 3 == 2) faceMaterialC[4] = colours[4];
+    if((i - (i % 3)) / 3 % 3 == 0) faceMaterialC[3] = colours[3];
+    if((i - (i % 3)) / 3 % 3 == 2) faceMaterialC[2] = colours[2];
+    if((((i - (i % 3)) / 3) - (((i - (i % 3)) / 3) % 3)) / 3 == 0) faceMaterialC[1] = colours[1];
+    if((((i - (i % 3)) / 3) - (((i - (i % 3)) / 3) % 3)) / 3 == 2) faceMaterialC[0] = colours[0];
+
+    faceMaterials = faceMaterialC.map(function(c) {
+      return new THREE.MeshLambertMaterial({ color: c , ambient: c });
+    });
+    cubeMaterials.push(new THREE.MeshFaceMaterial(faceMaterials))
+  }
+
 
   var cubeSize = 3,
       spacing = 0.5;
@@ -204,7 +216,7 @@ function Rubik(element, dimensions, background) {
 
   function newCube(x, y, z) {
     var cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize);
-    var cube = new THREE.Mesh(cubeGeometry, cubeMaterials);
+    var cube = new THREE.Mesh(cubeGeometry, cubeMaterials[allCubes.length]);
     cube.castShadow = true;
 
     cube.position = new THREE.Vector3(x, y, z);
@@ -288,7 +300,7 @@ function Rubik(element, dimensions, background) {
   }
 
   var startNextMove = function() {
-    var nextMove = moveQueue.pop();
+    var nextMove = moveQueue.unshift();
 
     if(nextMove) {
       clickVector = nextMove.vector;
